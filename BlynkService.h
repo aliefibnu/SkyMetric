@@ -4,11 +4,12 @@
 #include <Arduino.h>
 
 class LedService;
+struct AppConfig;
 
 class BlynkService
 {
 public:
-  void begin(LedService &ledService);
+  bool begin(LedService &ledService, const AppConfig &config);
   void run(LedService &ledService);
   void publish(
       const String &ledStatusJson,

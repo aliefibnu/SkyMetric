@@ -33,6 +33,28 @@ Pastikan board ESP32 sudah ter-install (`ESP32 by Espressif Systems`).
    - `WIFI_SSID`
    - `WIFI_PASSWORD`
 
+## Dual Mode Config
+
+Firmware sekarang memakai dua lapis sumber konfigurasi:
+
+1. Default fallback dari `secrets.h`.
+2. Override runtime yang disimpan ke flash ESP32 lewat Preferences.
+
+Saat device menyala, firmware akan memuat konfigurasi tersimpan terlebih dahulu. Jika belum ada data tersimpan, firmware memakai nilai default dari `secrets.h`.
+
+### Local Web Interface
+
+- ESP32 menyalakan portal setup lokal di AP `SkyMetric-Setup`.
+- Password AP default: `skymetric123`.
+- Buka `http://192.168.4.1` saat tersambung ke AP setup untuk mengubah:
+  - WiFi SSID
+  - WiFi password
+  - Blynk template ID
+  - Blynk template name
+  - Blynk auth token
+- Setelah disimpan, device akan restart supaya konfigurasi baru langsung aktif.
+- Tombol reset menghapus override tersimpan dan kembali ke nilai default dari `secrets.h`.
+
 ## Mapping Datastream Blynk
 
 1. `V1` (String): JSON status LED

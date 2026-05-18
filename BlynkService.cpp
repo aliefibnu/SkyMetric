@@ -1,5 +1,6 @@
 #include "BlynkService.h"
 
+#include "AppConfig.h"
 #include "LedService.h"
 #include "Logger.h"
 #include "secrets.h"
@@ -8,9 +9,8 @@
 
 #include <BlynkSimpleEsp32.h>
 
-void BlynkService::begin(LedService &ledService)
+bool BlynkService::begin(LedService &ledService, const AppConfig &config)
 {
-  WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(false);
 
@@ -18,11 +18,20 @@ void BlynkService::begin(LedService &ledService)
   ledService.setGreenConnecting();
   ledService.startBlockingProcess();
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED)
+  WiFi.begin(config.wifiSsid.c_str(), config.wifiPassword.c_str());
+  const unsigned long wifiStartMs = millis();
+  while (WiFi.status() != WL_CONNECTED && (millis() - wifiStartMs) < 15000)
   {
     ledService.update(millis());
     delay(50);
+  }
+
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    ledService.stopBlockingProcess();
+    ledService.setGreenFatal();
+    Logger::error("WiFi connection timeout, config portal remains available");
+    return false;
   }
 
   ledService.stopBlockingProcess();
@@ -30,33 +39,56 @@ void BlynkService::begin(LedService &ledService)
 
   Logger::warn("WiFi connected, starting Blynk connection");
 
-  Blynk.config(BLYNK_AUTH_TOKEN);
+  Blynk.config(config.blynkAuthToken.c_str());
   if (!Blynk.connect(5000))
   {
     Logger::error("Blynk initial connection failed");
+    ledService.setRedMiniError();
   }
+  else
+  {
+    ledService.setRedDefault();
+  }
+
+  return true;
 }
 
 void BlynkService::run(LedService &ledService)
 {
   if (WiFi.status() != WL_CONNECTED)
   {
+    static unsigned long lastReconnectAttemptMs = 0;
+    if ((millis() - lastReconnectAttemptMs) < 10000)
+    {
+      return;
+    }
+
+    lastReconnectAttemptMs = millis();
     Logger::warn("WiFi disconnected, retrying connection");
     ledService.setGreenConnecting();
     ledService.startBlockingProcess();
-    WiFi.disconnect();
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    WiFi.reconnect();
 
-    while (WiFi.status() != WL_CONNECTED)
+    const unsigned long reconnectStartMs = millis();
+    while (WiFi.status() != WL_CONNECTED && (millis() - reconnectStartMs) < 3000)
     {
       ledService.update(millis());
       delay(50);
     }
 
-    ledService.stopBlockingProcess();
-    ledService.setGreenConnected();
-
-    Logger::warn("WiFi reconnected");
+    if (WiFi.status() == WL_CONNECTED)
+    {
+      ledService.stopBlockingProcess();
+      ledService.setGreenConnected();
+      Logger::warn("WiFi reconnected");
+    }
+    else
+    {
+      ledService.stopBlockingProcess();
+      ledService.setRedMiniError();
+      Logger::warn("WiFi reconnect attempt failed");
+      return;
+    }
   }
 
   if (!Blynk.connected())
@@ -65,6 +97,11 @@ void BlynkService::run(LedService &ledService)
     if (!Blynk.connect(1000))
     {
       Logger::error("Blynk reconnect failed");
+      ledService.setRedMiniError();
+    }
+    else
+    {
+      ledService.setRedDefault();
     }
   }
 
