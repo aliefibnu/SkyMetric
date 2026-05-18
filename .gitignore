@@ -1,0 +1,17 @@
+secrets.h
+API_DOCS.md
+
+# Keep template tracked
+!secrets.example.h
+
+# Editor and OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Build artifacts
+build/
+dist/
+.pio/
