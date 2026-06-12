@@ -64,7 +64,7 @@ Saat device menyala, firmware akan memuat konfigurasi tersimpan terlebih dahulu.
 4. `V4` (Integer): GUVA raw ADC (0-4095)
 5. `V5` (Integer): GUVA centivolt (x100), contoh `330` = `3.30V`
 
-## Cara Jalanin
+## Cara Menjalankan
 
 1. Buka `skymetric.ino` di Arduino IDE.
 2. Pilih board `ESP32 Dev Module` dan port yang benar.
